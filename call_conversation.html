@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AION CRM - 客户跟进记录</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            font-size: 24px;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: #e74c3c;
+        }
+
+        .modal-body {
+            padding: 0;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 客户信息区域 */
+        .customer-info {
+            padding: 20px 25px;
+            background-color: #fff;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .customer-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .customer-phone {
+            color: #7f8c8d;
+            font-size: 15px;
+            margin-left: 10px;
+        }
+
+        .customer-details {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .customer-tags {
+            display: flex;
+            gap: 8px;
+        }
+
+        .customer-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-high-value {
+            background-color: #fff8e1;
+            color: #ff9800;
+        }
+
+        .tag-interested {
+            background-color: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .tag-price-sensitive {
+            background-color: #f3e5f5;
+            color: #9c27b0;
+        }
+
+        /* 对话区域 */
+        .conversation-container {
+            flex: 1;
+            padding: 20px 25px;
+            overflow-y: auto;
+            background-color: #f5f7fa;
+        }
+
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .conversation-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .conversation-date {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .conversation-duration {
+            padding: 5px 12px;
+            background-color: #e8f5e9;
+            color: #4caf50;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .conversation-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            gap: 15px;
+            max-width: 85%;
+        }
+
+        .message.agent {
+            align-self: flex-start;
+        }
+
+        .message.customer {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .avatar.agent {
+            background-color: #e3f2fd;
+            color: #2196f3;
+        }
+
+        .avatar.customer {
+            background-color: #f5f5f5;
+            color: #616161;
+        }
+
+        .message-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            position: relative;
+            max-width: 100%;
+        }
+
+        .message.agent .message-bubble {
+            background-color: #e3f2fd;
+            color: #2c3e50;
+            border-top-left-radius: 4px;
+        }
+
+        .message.customer .message-bubble {
+            background-color: #f5f5f5;
+            color: #2c3e50;
+            border-top-right-radius: 4px;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .message-audio {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #3498db;
+            transition: color 0.2s ease;
+        }
+
+        .message-audio:hover {
+            color: #2980b9;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .audio-play-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .audio-play-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background-color: #e0e0e0;
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .audio-time {
+            font-size: 12px;
+            color: #7f8c8d;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* 底部工具栏 */
+        .conversation-footer {
+            padding: 15px 25px;
+            background-color: #fff;
+            border-top: 1px solid #eaeaea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.primary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+        }
+
+        .action-btn.primary:hover {
+            background-color: #2980b9;
+        }
+
+        .action-btn.secondary {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            border: 1px solid #e0e0e0;
+        }
+
+        .action-btn.secondary:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* 时间线导航 */
+        .timeline-nav {
+            padding: 15px 25px;
+            background-color: #fff;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .timeline-list {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .timeline-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline-item.active {
+            background-color: #e3f2fd;
+            color: #2196f3;
+            font-weight: 500;
+        }
+
+        .timeline-item:not(.active) {
+            background-color: #f5f7fa;
+            color: #7f8c8d;
+        }
+
+        .timeline-item:not(.active):hover {
+            background-color: #edf2f7;
+            color: #2c3e50;
+        }
+
+        /* 自适应样式 */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 100%;
+                max-width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+
+            .customer-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .customer-details {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">客户跟进记录</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- 客户信息区域 -->
+                <div class="customer-info">
+                    <div class="customer-header">
+                        <div>
+                            <span class="customer-name">张三</span>
+                            <span class="customer-phone">13812345678</span>
+                        </div>
+                        <div class="customer-tags">
+                            <span class="customer-tag tag-high-value">高价值</span>
+                            <span class="customer-tag tag-interested">有意向</span>
+                            <span class="customer-tag tag-price-sensitive">对价格敏感</span>
+                        </div>
+                    </div>
+                    <div class="customer-details">
+                        <div>地域：上海市</div>
+                        <div>年龄：35-45岁</div>
+                        <div>消费意向：高</div>
+                    </div>
+                </div>
+
+                <!-- 时间线导航 -->
+                <div class="timeline-nav">
+                    <div class="timeline-list">
+                        <div class="timeline-item active">
+                            <i class="fas fa-phone"></i>
+                            <span>2024-03-21 14:30 (小美01号)</span>
+                        </div>
+                        <div class="timeline-item">
+                            <i class="fas fa-phone"></i>
+                            <span>2024-03-20 15:45 (小美02号)</span>
+                        </div>
+                        <div class="timeline-item">
+                            <i class="fas fa-comment"></i>
+                            <span>2024-03-20 10:15 (小美04号)</span>
+                        </div>
+                        <div class="timeline-item">
+                            <i class="fas fa-phone"></i>
+                            <span>2024-03-19 09:30 (小美03号)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对话区域 -->
+                <div class="conversation-container">
+                    <div class="conversation-header">
+                        <div>
+                            <div class="conversation-title">通话记录 - 小美01号</div>
+                            <div class="conversation-date">2024-03-21 14:30</div>
+                        </div>
+                        <div class="conversation-duration">
+                            <i class="fas fa-clock"></i>
+                            通话时长：4分32秒
+                        </div>
+                    </div>
+
+                    <div class="conversation-messages">
+                        <!-- 客服消息 -->
+                        <div class="message agent">
+                            <div class="avatar agent">美</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    您好，我是AION的智能助理小美，很高兴为您服务。我看到您之前对我们的产品表示了兴趣，不知道您是否有时间了解一下详细信息？
+                                </div>
+                                <div class="message-meta">
+                                    <div class="message-time">14:30:05</div>
+                                    <div class="message-audio" onclick="toggleAudio(this, 'audio1')">
+                                        <i class="fas fa-play"></i>
+                                        <span>播放语音</span>
+                                    </div>
+                                </div>
+                                <div class="audio-controls" id="audio1" style="display: none;">
+                                    <div class="audio-play-btn">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="audio-progress">
+                                        <div class="audio-progress-bar"></div>
+                                    </div>
+                                    <div class="audio-time">0:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 客户消息 -->
+                        <div class="message customer">
+                            <div class="avatar customer">客</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    好的，我确实对你们的产品很感兴趣，主要想了解一下价格和售后服务这块。
+                                </div>
+                                <div class="message-meta">
+                                    <div class="message-time">14:30:15</div>
+                                    <div class="message-audio" onclick="toggleAudio(this, 'audio2')">
+                                        <i class="fas fa-play"></i>
+                                        <span>播放语音</span>
+                                    </div>
+                                </div>
+                                <div class="audio-controls" id="audio2" style="display: none;">
+                                    <div class="audio-play-btn">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="audio-progress">
+                                        <div class="audio-progress-bar"></div>
+                                    </div>
+                                    <div class="audio-time">0:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 客服消息 -->
+                        <div class="message agent">
+                            <div class="avatar agent">美</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    非常感谢您的关注。关于价格，我们有多个套餐可以选择，基础版每年998元，专业版每年1998元，企业版每年4998元起。每个版本的功能和服务内容有所不同。
+                                </div>
+                                <div class="message-meta">
+                                    <div class="message-time">14:30:45</div>
+                                    <div class="message-audio" onclick="toggleAudio(this, 'audio3')">
+                                        <i class="fas fa-play"></i>
+                                        <span>播放语音</span>
+                                    </div>
+                                </div>
+                                <div class="audio-controls" id="audio3" style="display: none;">
+                                    <div class="audio-play-btn">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="audio-progress">
+                                        <div class="audio-progress-bar"></div>
+                                    </div>
+                                    <div class="audio-time">0:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 客服消息 -->
+                        <div class="message agent">
+                            <div class="avatar agent">美</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    关于售后服务，我们提供7×24小时的技术支持，包括在线客服、电话支持和远程协助。同时，我们还提供免费的产品培训和定期的系统升级服务。
+                                </div>
+                                <div class="message-meta">
+                                    <div class="message-time">14:31:20</div>
+                                    <div class="message-audio" onclick="toggleAudio(this, 'audio4')">
+                                        <i class="fas fa-play"></i>
+                                        <span>播放语音</span>
+                                    </div>
+                                </div>
+                                <div class="audio-controls" id="audio4" style="display: none;">
+                                    <div class="audio-play-btn">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="audio-progress">
+                                        <div class="audio-progress-bar"></div>
+                                    </div>
+                                    <div class="audio-time">0:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 客户消息 -->
+                        <div class="message customer">
+                            <div class="avatar customer">客</div>
+                            <div class="message-content">
+                                <div class="message-bubble">
+                                    专业版和企业版的区别主要在哪里？我们公司规模不大，但对数据安全和系统稳定性要求比较高。
+                                </div>
+                                <div class="message-meta">
+                                    <div class="message-time">14:32:05</div>
+                                    <div class="message-audio" onclick="toggleAudio(this, 'audio5')">
+                                        <i class="fas fa-play"></i>
+                                        <span>播放语音</span>
+                                    </div>
+                                </div>
+                                <div class="audio-controls" id="audio5" style="display: none;">
+                                    <div class="audio-play-btn">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="audio-progress">
+                                        <div class="audio-progress-bar"></div>
+                                    </div>
+                                    <div class="audio-time">0:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 更多对话内容... -->
+                    </div>
+                </div>
+
+                <!-- 底部工具栏 -->
+                <div class="conversation-footer">
+                    <div class="conversation-summary">
+                        <strong>通话要点：</strong> 客户对产品表示强烈兴趣，特别关注价格和售后服务，计划下周详谈。
+                    </div>
+                    <div class="footer-actions">
+                        <button class="action-btn secondary">
+                            <i class="fas fa-download"></i>
+                            <span>下载录音</span>
+                        </button>
+                        <button class="action-btn primary">
+                            <i class="fas fa-file-alt"></i>
+                            <span>生成报告</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 音频播放控制
+        function toggleAudio(element, audioId) {
+            const audioControls = document.getElementById(audioId);
+            const allAudioControls = document.querySelectorAll('.audio-controls');
+            
+            // 隐藏所有其他音频控制
+            allAudioControls.forEach(control => {
+                if (control.id !== audioId) {
+                    control.style.display = 'none';
+                }
+            });
+            
+            // 切换当前音频控制的显示状态
+            if (audioControls.style.display === 'none') {
+                audioControls.style.display = 'flex';
+            } else {
+                audioControls.style.display = 'none';
+            }
+        }
+
+        // 模拟音频播放进度
+        document.querySelectorAll('.audio-play-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const audioControls = this.closest('.audio-controls');
+                const progressBar = audioControls.querySelector('.audio-progress-bar');
+                const timeDisplay = audioControls.querySelector('.audio-time');
+                const playIcon = this.querySelector('i');
+                
+                if (playIcon.classList.contains('fa-play')) {
+                    // 开始播放
+                    playIcon.classList.remove('fa-play');
+                    playIcon.classList.add('fa-pause');
+                    
+                    // 模拟进度更新
+                    let progress = 0;
+                    let seconds = 0;
+                    
+                    const interval = setInterval(() => {
+                        progress += 1;
+                        progressBar.style.width = `${progress}%`;
+                        
+                        if (progress % 5 === 0) {
+                            seconds += 1;
+                            const min = Math.floor(seconds / 60);
+                            const sec = seconds % 60;
+                            timeDisplay.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+                        }
+                        
+                        if (progress >= 100) {
+                            clearInterval(interval);
+                            playIcon.classList.remove('fa-pause');
+                            playIcon.classList.add('fa-play');
+                            progressBar.style.width = '0%';
+                            timeDisplay.textContent = '0:00';
+                        }
+                    }, 50);
+                } else {
+                    // 暂停播放
+                    playIcon.classList.remove('fa-pause');
+                    playIcon.classList.add('fa-play');
+                }
+            });
+        });
+
+        // 时间线导航切换
+        document.querySelectorAll('.timeline-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.timeline-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+
+        // 关闭按钮
+        document.querySelector('.close-btn').addEventListener('click', function() {
+            // 在实际应用中，这里应该关闭模态窗口
+            alert('关闭对话窗口');
+        });
+    </script>
+</body>
+</html> 
